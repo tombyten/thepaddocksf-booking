@@ -118,10 +118,10 @@ export async function sendBookingReminder(b: BookingEmailData): Promise<void> {
     "Reminder",
     PALETTE.orange,
     `<p>Hi ${b.userName},</p>
-     <p>This is a heads-up that your lift bay booking is coming up in 24 hours.</p>
+     <p>Heads up — your lift bay booking is coming up.</p>
      ${detailsBlock(b)}`,
   );
-  await send({ to: b.userEmail, subject: `Reminder · Bay ${b.bayId} tomorrow`, html });
+  await send({ to: b.userEmail, subject: `Reminder · Bay ${b.bayId} booking`, html });
 }
 
 export async function sendPasswordReset(opts: {

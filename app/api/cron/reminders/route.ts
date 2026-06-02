@@ -2,10 +2,8 @@ import { NextResponse } from "next/server";
 import { sql } from "@vercel/postgres";
 import { sendBookingReminder } from "@/lib/mail";
 
-// Hours before start_time at which to send the reminder.
-const REMINDER_HOURS_AHEAD = 24;
-// Width of the lookahead window in hours. Must be ≥ the cron interval.
-const WINDOW_HOURS = 2;
+// Daily cron sends reminders for any unreminded booking starting in the next 24 hours.
+const LOOKAHEAD_HOURS = 24;
 
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization");
@@ -13,9 +11,6 @@ export async function GET(request: Request) {
   if (!process.env.CRON_SECRET || auth !== expected) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const lowerHours = REMINDER_HOURS_AHEAD - WINDOW_HOURS / 2;
-  const upperHours = REMINDER_HOURS_AHEAD + WINDOW_HOURS / 2;
 
   const { rows } = await sql<{
     id: string;
@@ -29,8 +24,8 @@ export async function GET(request: Request) {
     FROM bookings b
     JOIN users u ON u.id = b.user_id
     WHERE b.reminded_at IS NULL
-      AND b.start_time > NOW() + (${lowerHours} || ' hours')::interval
-      AND b.start_time < NOW() + (${upperHours} || ' hours')::interval
+      AND b.start_time > NOW()
+      AND b.start_time < NOW() + (${LOOKAHEAD_HOURS} || ' hours')::interval
   `;
 
   let sent = 0;
