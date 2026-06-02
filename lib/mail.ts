@@ -142,3 +142,26 @@ export async function sendPasswordReset(opts: {
   );
   await send({ to: opts.userEmail, subject: "Reset your Paddock booking password", html });
 }
+
+export async function sendMemberWelcome(opts: {
+  userEmail: string;
+  userName: string;
+  tempPassword: string;
+  loginUrl: string;
+}): Promise<void> {
+  const html = layout(
+    "Welcome to The Paddock",
+    PALETTE.navy,
+    `<p>Hi ${opts.userName},</p>
+     <p>You've been added as a member of The Paddock SF's lift bay booking system. Sign in to reserve a bay.</p>
+     <table cellpadding="0" cellspacing="0" style="margin:16px 0;font-size:15px;">
+       <tr><td style="padding:4px 16px 4px 0;color:${PALETTE.navy};opacity:0.7;">Email</td><td style="padding:4px 0;"><strong>${opts.userEmail}</strong></td></tr>
+       <tr><td style="padding:4px 16px 4px 0;color:${PALETTE.navy};opacity:0.7;">Temporary password</td><td style="padding:4px 0;"><strong>${opts.tempPassword}</strong></td></tr>
+     </table>
+     <p style="margin:20px 0;">
+       <a href="${opts.loginUrl}" style="display:inline-block;background:${PALETTE.orange};color:#fff;text-decoration:none;padding:12px 20px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Sign in</a>
+     </p>
+     <p style="font-size:13px;opacity:0.7;">Once you're in, head to the Account page and change your password.</p>`,
+  );
+  await send({ to: opts.userEmail, subject: "Welcome to The Paddock — your booking access", html });
+}

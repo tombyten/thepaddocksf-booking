@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sql } from "@vercel/postgres";
 import { hashPassword } from "@/lib/password";
+import { sendMemberWelcome } from "@/lib/mail";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -65,6 +66,15 @@ export async function POST(request: Request) {
       VALUES (${email}, ${name}, ${hash}, ${role})
       RETURNING id, email, name, role, created_at
     `;
+
+    const loginUrl = `${process.env.APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000"}/login`;
+    await sendMemberWelcome({
+      userEmail: email,
+      userName: name,
+      tempPassword: password,
+      loginUrl,
+    });
+
     return NextResponse.json({ member: rows[0] }, { status: 201 });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Database error";
