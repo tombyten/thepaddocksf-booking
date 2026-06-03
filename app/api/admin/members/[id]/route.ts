@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sql } from "@vercel/postgres";
-import { hashPassword } from "@/lib/password";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -31,7 +30,7 @@ export async function DELETE(
   return NextResponse.json({ ok: true });
 }
 
-type PatchBody = { password?: string; role?: "admin" | "member" };
+type PatchBody = { role?: "admin" | "member" };
 
 export async function PATCH(
   request: Request,
@@ -45,17 +44,6 @@ export async function PATCH(
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  if (body.password) {
-    if (body.password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters." },
-        { status: 400 },
-      );
-    }
-    const hash = await hashPassword(body.password);
-    await sql`UPDATE users SET password_hash = ${hash} WHERE id = ${params.id}`;
   }
 
   if (body.role === "admin" || body.role === "member") {

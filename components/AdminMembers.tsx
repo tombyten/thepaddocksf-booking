@@ -25,9 +25,10 @@ export default function AdminMembers({
   const [role, setRole] = useState<"admin" | "member">("member");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [lastInvite, setLastInvite] = useState<{
+  const [lastLink, setLastLink] = useState<{
     email: string;
-    setPasswordUrl: string;
+    url: string;
+    kind: "invite" | "reset";
   } | null>(null);
 
   async function addMember(e: React.FormEvent) {
@@ -43,7 +44,11 @@ export default function AdminMembers({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed");
       setMembers([data.member, ...members]);
-      setLastInvite({ email: data.member.email, setPasswordUrl: data.setPasswordUrl });
+      setLastLink({
+        email: data.member.email,
+        url: data.setPasswordUrl,
+        kind: "invite",
+      });
       setName("");
       setEmail("");
       setRole("member");
@@ -79,22 +84,22 @@ export default function AdminMembers({
     }
   }
 
-  async function resetPassword(id: string) {
-    const pw = prompt("Enter new password (min 8 chars):");
-    if (!pw) return;
+  async function sendResetLink(member: Member) {
+    if (
+      !confirm(
+        `Send a password reset link to ${member.email}? The link is valid for 24 hours.`,
+      )
+    )
+      return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/members/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pw }),
+      const res = await fetch(`/api/admin/members/${member.id}/reset-link`, {
+        method: "POST",
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Failed");
-      }
-      alert("Password updated.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed");
+      setLastLink({ email: member.email, url: data.resetUrl, kind: "reset" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
     } finally {
@@ -187,23 +192,26 @@ export default function AdminMembers({
         </div>
       )}
 
-      {lastInvite && (
+      {lastLink && (
         <div className="bg-navy text-cream p-4 mb-3 border-2 border-orange">
           <div className="uppercase tracking-wider text-xs font-semibold mb-2 text-orange">
-            Invite sent to {lastInvite.email}
+            {lastLink.kind === "invite"
+              ? `Invite sent to ${lastLink.email}`
+              : `Reset link sent to ${lastLink.email}`}
           </div>
           <p className="text-sm mb-2">
-            If the email does not arrive, share this link directly. It is valid for 7 days.
+            If the email does not arrive, share this link directly. It is valid for{" "}
+            {lastLink.kind === "invite" ? "7 days" : "24 hours"}.
           </p>
           <input
             type="text"
             readOnly
-            value={lastInvite.setPasswordUrl}
+            value={lastLink.url}
             onFocus={(e) => e.currentTarget.select()}
             className="w-full bg-cream text-navy border border-cream/40 px-2 py-1 font-mono text-xs"
           />
           <button
-            onClick={() => setLastInvite(null)}
+            onClick={() => setLastLink(null)}
             className="mt-2 text-xs uppercase tracking-wider underline"
           >
             Dismiss
@@ -258,11 +266,11 @@ export default function AdminMembers({
                     {m.role === "admin" ? "Make Member" : "Make Admin"}
                   </button>
                   <button
-                    onClick={() => resetPassword(m.id)}
+                    onClick={() => sendResetLink(m)}
                     disabled={loading}
                     className="bg-navy text-cream uppercase tracking-wider px-2 py-1 text-xs font-semibold hover:bg-orange transition-colors disabled:opacity-60"
                   >
-                    Reset PW
+                    Send Reset Link
                   </button>
                   <button
                     onClick={() => deleteMember(m.id)}

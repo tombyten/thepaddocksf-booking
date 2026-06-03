@@ -124,6 +124,18 @@ export async function sendBookingReminder(b: BookingEmailData): Promise<void> {
   await send({ to: b.userEmail, subject: `Reminder · Bay ${b.bayId} booking`, html });
 }
 
+function formatDuration(minutes: number): string {
+  if (minutes >= 24 * 60) {
+    const days = Math.round(minutes / (24 * 60));
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+  if (minutes >= 60) {
+    const hours = Math.round(minutes / 60);
+    return `${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+  return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+}
+
 export async function sendPasswordReset(opts: {
   userEmail: string;
   userName: string;
@@ -134,11 +146,11 @@ export async function sendPasswordReset(opts: {
     "Reset password",
     PALETTE.navy,
     `<p>Hi ${opts.userName},</p>
-     <p>Click the link below to set a new password. The link expires in ${opts.expiresInMinutes} minutes.</p>
+     <p>Click the link below to set a new password. The link expires in ${formatDuration(opts.expiresInMinutes)}.</p>
      <p style="margin:20px 0;">
        <a href="${opts.resetUrl}" style="display:inline-block;background:${PALETTE.orange};color:#fff;text-decoration:none;padding:12px 20px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Reset password</a>
      </p>
-     <p style="font-size:13px;opacity:0.7;">If you didn't request this, you can ignore this email — your password won't change.</p>`,
+     <p style="font-size:13px;opacity:0.7;">If you did not request this, you can ignore this email and your password will stay the same.</p>`,
   );
   await send({ to: opts.userEmail, subject: "Reset your Paddock booking password", html });
 }
