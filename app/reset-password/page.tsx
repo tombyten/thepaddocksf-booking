@@ -10,6 +10,8 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token") ?? "";
+  const isWelcome = params.get("welcome") === "1";
+  const subtitle = isWelcome ? "Set Your Password" : "New Password";
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -50,7 +52,7 @@ export default function ResetPasswordPage() {
         <div className="mb-6 text-center">
           <h1 className="font-display text-5xl text-navy tracking-wide">THE PADDOCK</h1>
           <p className="font-sans uppercase tracking-[0.3em] text-orange text-sm mt-1">
-            New Password
+            {subtitle}
           </p>
         </div>
 

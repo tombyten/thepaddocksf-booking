@@ -22,10 +22,13 @@ export default function AdminMembers({
   const [members, setMembers] = useState(initialMembers);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "member">("member");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [lastInvite, setLastInvite] = useState<{
+    email: string;
+    setPasswordUrl: string;
+  } | null>(null);
 
   async function addMember(e: React.FormEvent) {
     e.preventDefault();
@@ -35,14 +38,14 @@ export default function AdminMembers({
       const res = await fetch("/api/admin/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, role }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed");
       setMembers([data.member, ...members]);
+      setLastInvite({ email: data.member.email, setPasswordUrl: data.setPasswordUrl });
       setName("");
       setEmail("");
-      setPassword("");
       setRole("member");
       router.refresh();
     } catch (e) {
@@ -131,7 +134,7 @@ export default function AdminMembers({
 
       <form
         onSubmit={addMember}
-        className="bg-white border-2 border-navy p-4 mb-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end"
+        className="bg-white border-2 border-navy p-4 mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end"
       >
         <div>
           <label className="block uppercase tracking-wider text-navy text-xs font-semibold mb-1">
@@ -153,19 +156,6 @@ export default function AdminMembers({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full border-2 border-navy bg-cream px-3 py-2"
-          />
-        </div>
-        <div>
-          <label className="block uppercase tracking-wider text-navy text-xs font-semibold mb-1">
-            Password
-          </label>
-          <input
-            type="text"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
             className="w-full border-2 border-navy bg-cream px-3 py-2"
           />
         </div>
@@ -194,6 +184,30 @@ export default function AdminMembers({
       {error && (
         <div className="bg-red text-cream px-4 py-2 mb-3 uppercase tracking-wider text-sm">
           {error}
+        </div>
+      )}
+
+      {lastInvite && (
+        <div className="bg-navy text-cream p-4 mb-3 border-2 border-orange">
+          <div className="uppercase tracking-wider text-xs font-semibold mb-2 text-orange">
+            Invite sent to {lastInvite.email}
+          </div>
+          <p className="text-sm mb-2">
+            If the email does not arrive, share this link directly. It is valid for 7 days.
+          </p>
+          <input
+            type="text"
+            readOnly
+            value={lastInvite.setPasswordUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            className="w-full bg-cream text-navy border border-cream/40 px-2 py-1 font-mono text-xs"
+          />
+          <button
+            onClick={() => setLastInvite(null)}
+            className="mt-2 text-xs uppercase tracking-wider underline"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
